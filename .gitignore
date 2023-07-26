@@ -1,7 +1,0 @@
-log/*
-.conda/
-version_manifest*
-*.*.*.json
-server.jar
-.vscode/
-*.*.json
