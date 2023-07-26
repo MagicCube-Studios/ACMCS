@@ -1,24 +1,73 @@
-"""l"""
+"""
+@author: got991
+@file: main.py
+@contact: 484029294@qq.com
+@github: https://github.com/got991
+@license: GNU General Public License v3.0
+"""
+
+# main.py_summary_
+# Raises:
+#     SystemError: 在不支持系统上时
+#     Exception: _发生未知错误时（变量 ik 非正常值）
+#     Exception: 版本核心 sha1 校验失败时
+# Returns:
+#     _type_: _description_
 
 import logging
 import time
 import configparser
 import json
 import os
-import wget
 import hashlib
 import platform
+import wget
 
 # 检测系统 (Windows / Linux)
 system = platform.platform().lower()
-if "windows" in system:
+if "windows" in system or "nt" in system:
     SystemType = "Windows"
 elif "linux" in system:
     SystemType = "Linux"
 elif "darwin" in system or "mac" in system:
+# else:
     print("抱歉，暂不支持 Mac OS 系统")
     raise SystemError("暂不支持 Mac OS 系统")
+else:
+    print("未知系统！")
+    raise SystemError("暂不支持该系统")
 # 初始化日志
+
+
+# （已修复）删除了程序正在使用的日志文件 #
+# 修复方法：将这一段放到生成日志之前运行
+# 删除没有内容的日志文件
+ct = len(os.listdir("log"))
+for lf in os.listdir("log"):
+    if not os.path.getsize(f"log/{lf}") > 0:
+        os.remove(f"log/{lf}")
+        logging.info(f"删除无内容的日志文件：{lf}")
+        continue
+    elif ct == 0:
+        break
+    else:
+        continue
+    ct = ct - 1
+
+# 删除无意义的日志文件（小于等于 3 行)
+ct = len(os.listdir("log"))
+for lf in os.listdir("log"):
+    with open(f"log/{lf}", "r", encoding="utf-8") as f:
+        lines = f.readlines()
+        if len(lines) <= 3:
+            os.remove(f"log/{lf}")
+            logging.info(f"删除无意义的日志文件：{lf}")
+            continue
+        elif ct == 0:
+            break
+        else:
+            continue
+
 LOGFORMAT = "[%(pathname)s | %(funcName)s | %(process)d | %(lineno)d] [%(levelname)s %(asctime)s] %(message)s"
 DATEFORMAT = "%Y/%m/%d %H:%M:%S"
 LOGFILEFORMAT = "%Y_%m_%d-%H-%M-%S"
@@ -35,40 +84,13 @@ logging.basicConfig(
     filename=f"log/{LOGFILENAME}",
     filemode="a"
 )
-logging.info(f"当前系统：{SystemType}") # type: ignore
-# 删除没有内容的日志文件
-# ct = len(os.listdir("log"))
-# for lf in os.listdir("log"):
-#     if not os.path.getsize(f"log/{lf}") > 0 and lf != f"\\{LOGFILENAME}":
-#         os.remove(f"log/{lf}")
-#         logging.info(f"删除无内容的日志文件：{lf}")
-#         continue
-#     elif ct == 0:
-#         break
-#     else:
-#         continue
-#     ct = ct - 1
-# 
-# 删除无意义的日志文件（小于等于 3 行)
-# ct = len(os.listdir("log"))
-# for lf in os.listdir("log"):
-#     with open(f"log/{lf}", "r", encoding="utf-8") as f:
-#         lines = f.readlines()
-#         if len(lines) <= 3 and lf != f"\\{LOGFILENAME}":
-#             os.remove(f"log/{lf}")
-#             logging.info(f"删除无意义的日志文件：{lf}")
-#             continue
-#         elif ct == 0:
-#             break
-#         else:
-#             continue
-# 
+logging.info(f"当前系统：{SystemType}")
 logging.info("日志模块 初始化完成")
 # 初始化配置
 config = configparser.ConfigParser()
 
 if not os.path.exists("config.ini"):
-    config["Server"] = { # type: ignore
+    config["Server"] = {
         'ServerVersion': 'auto',
         'type': 'vanilla',
         'useRelease': True,
@@ -116,7 +138,7 @@ while i < len(content['versions']):
     i += 1
 logging.debug(f"共有 {x} 个版本")
 
-if CFGREADSOON: # type: ignore
+if CFGREADSOON:
     with open(file='config.ini', mode="r", encoding="utf-8") as f:
         config = configparser.ConfigParser()
         config.read_file(f)
@@ -141,13 +163,13 @@ if CFGREADSOON: # type: ignore
                 ik = 1
                 break
             ic = ic + 1
-        if ik == 1: # type: ignore
+        if ik == 1:
             logging.info(f"使用最新版本")
             if use_release == 'True':
                 ServerVersion = latest_release
             else:
                 ServerVersion = latest_snapshot
-        elif ik == 0: # type: ignore
+        elif ik == 0:
             logging.info("使用当前版本")
         else:
             logging.critical("发生未知错误")
@@ -185,7 +207,7 @@ if CFGREADSOON: # type: ignore
                 sha1Obj.update(f.read())
             return sha1Obj.hexdigest()
         sha1 = getSha1("server.jar")
-        if sha1!= DownloadSHA1:
+        if sha1 != DownloadSHA1:
             logging.error(f"版本核心 {ServerVersion} 下载失败")
             logging.warning(f"sha1 校验失败,重试...")
             DownloadSHA1 = content['downloads']['server']['sha1']
@@ -200,11 +222,32 @@ if CFGREADSOON: # type: ignore
             wget.download(DownloadUrl)
             print("\n", end="")
             sha1 = getSha1("server.jar")
-            if sha1!= DownloadSHA1:
+            if sha1 != DownloadSHA1:
                 logging.critical(f"版本核心 {ServerVersion} 下载失败:sha1 校验失败")
-                raise Exception("版本核心 {ServerVersion} 下载失败:sha1 校验失败")
+                raise Exception(f"版本核心 {ServerVersion} 下载失败:sha1 校验失败")
             else:
                 logging.info(f"版本核心 {ServerVersion} 下载成功")
-            if SystemType == "Linux": # type: ignore
-                print("aaa")
-            print(SystemType)
+            # 下载 Java
+            logging.info("检测用户是否安装了 Java")
+            
+#             if SystemType == "Linux":
+#                 # Linux
+#                 # 例：1.19.2 -> 1192
+#                 svl = ServerVersion.split(".")
+#                 i = len(svl)
+#                 k = ""
+#                 for s in svl:
+#                     if i > 0:
+#                         k = k + s
+#                     else:
+#                         break
+#                     i = i - 1
+#                 ServerVersionLX = k
+#                 os.system("chmod +x server.jar")
+#                 os.system(f"mkdir ./server")
+#                 os.system(f"mkdir ./server/{ServerVersionLX}")
+#                 os.system(f"mv server.jar ./server/{ServerVersionLX}/server.jar")
+#             elif SystemType == "Windows":
+#                 # Windows
+#                 os.system("mkdir ./server")
+#                 os.system(f"mkdir ./server/{ServerVersion}")
