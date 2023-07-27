@@ -5,3 +5,4 @@ version_manifest*
 server.jar
 .vscode/
 *.*.json
+config.ini
